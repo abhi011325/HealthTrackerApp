@@ -9,15 +9,16 @@
   import Trend from './Trend.svelte'
   import StepsTrend from './StepsTrend.svelte'
   import ReasonSheet from './ReasonSheet.svelte'
+  import StepsSheet from './StepsSheet.svelte'
   import Settings from './Settings.svelte'
 
   let { name, email }: { name: string; email: string } = $props()
 
   let weights = $state<Weight[]>([]), gaps = $state<Gap[]>([]), reasons = $state<Reason[]>([]), steps = $state<Steps[]>([])
   let stepsGoal = $state(DEFAULT_STEPS_GOAL), metric = $state<'weight' | 'steps'>('weight')
-  let stepInputs = $state<Record<string, string>>({}), stepsMsg = $state('')
+  let stepInput = $state(''), stepsMsg = $state('')
   let syncState = $state<SyncState>('synced'), pending = $state(0)
-  let trendOpen = $state(false), sheet = $state<'none' | 'reason' | 'settings'>('none')
+  let trendOpen = $state(false), sheet = $state<'none' | 'reason' | 'steps' | 'settings'>('none')
   let input = $state(''), savedMsg = $state(''), prefilled = $state(false)
 
   const sum = $derived(summarize(weights, gaps))
@@ -69,17 +70,20 @@
   }
   async function onReasons(entries: { date: string; reason: string }[]) { await saveGapReasons(entries); sheet = 'none' }
 
-  function onStepInput(date: string, e: Event) {
+  function onStepInput(e: Event) {
     const digits = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '').slice(0, 5)
-    stepInputs[date] = digits ? Number(digits).toLocaleString('en-IN') : ''
+    stepInput = digits ? Number(digits).toLocaleString('en-IN') : ''
   }
-  async function saveStepRows() {
-    const entries = st.toEnter.map(d => ({ date: d, count: parseInt((stepInputs[d] ?? '').replace(/[^0-9]/g, ''), 10) })).filter(e => e.count > 0 && e.count < 100000)
-    if (!entries.length) return
-    await saveSteps(entries)
-    stepInputs = {}
-    stepsMsg = 'Saved ' + entries.map(e => `${fmtN(e.count)} for ${e.date === yesterday ? 'yesterday' : fmtDate(parse(e.date))}`).join(' · ')
-    setTimeout(() => (stepsMsg = ''), 3000)
+  async function saveYesterdaySteps() {
+    const count = parseInt(stepInput.replace(/[^0-9]/g, ''), 10)
+    if (!(count > 0 && count < 100000)) return
+    await saveSteps([{ date: yesterday, count }])
+    stepInput = ''
+    stepsMsg = `Saved ${fmtN(count)} steps for yesterday`; setTimeout(() => (stepsMsg = ''), 3000)
+  }
+  async function onMissingSteps(entries: { date: string; count: number }[]) {
+    await saveSteps(entries); sheet = 'none'
+    stepsMsg = 'Saved ' + entries.map(e => `${fmtN(e.count)} for ${fmtDate(parse(e.date))}`).join(' · '); setTimeout(() => (stepsMsg = ''), 4000)
   }
 </script>
 
@@ -143,20 +147,19 @@
 
   <section class="card rounded-2xl mt-2.5 p-3.5">
     <div class="flex justify-between text-xs text-muted mb-2"><span>Steps</span><span>from the Health app</span></div>
-    <div class="flex flex-col gap-2">
-      {#each st.toEnter as d (d)}
-        <div class="flex items-center gap-2.5">
-          <div class="shrink-0 w-[118px] text-sm text-ink-2 leading-tight">
-            {d === yesterday ? 'Yesterday' : fmtDay(parse(d))}
-            <small class="block text-[11px] text-muted">{d === yesterday ? fmtDate(parse(d)) + (stepsByDate.has(d) ? ` · saved ${fmtN(stepsByDate.get(d)!)}` : '') : 'no steps logged'}</small>
-          </div>
-          <input type="text" inputmode="numeric" pattern="[0-9]*" placeholder="steps" value={stepInputs[d] ?? ''} oninput={e => onStepInput(d, e)} onkeydown={e => e.key === 'Enter' && saveStepRows()}
-            class="flex-1 w-0 min-w-0 h-[46px] text-center text-[22px] font-semibold bg-surface border border-line rounded-2xl tnum outline-none focus:border-accent placeholder:text-sm placeholder:font-normal" />
-        </div>
-      {/each}
+    <div class="flex items-center gap-2">
+      <div class="shrink-0 w-[118px] text-sm text-ink-2 leading-tight">
+        Yesterday
+        <small class="block text-[11px] text-muted">{fmtDate(parse(yesterday))}{stepsByDate.has(yesterday) ? ` · saved ${fmtN(stepsByDate.get(yesterday)!)}` : ''}</small>
+      </div>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" placeholder="steps" value={stepInput} oninput={onStepInput} onkeydown={e => e.key === 'Enter' && saveYesterdaySteps()}
+        class="flex-1 w-0 min-w-0 h-12 text-center text-[22px] font-semibold bg-surface border border-line rounded-2xl tnum outline-none focus:border-accent placeholder:text-sm placeholder:font-normal" />
+      <button class="shrink-0 h-12 px-5 rounded-2xl bg-accent text-white font-semibold text-[15px] shadow-[0_6px_20px_rgba(57,135,229,.35)] active:scale-95 transition-transform" onclick={saveYesterdaySteps}>Save</button>
     </div>
-    <button class="w-full h-12 mt-3 rounded-2xl bg-accent text-white font-semibold text-[15px] shadow-[0_6px_20px_rgba(57,135,229,.35)] active:scale-95 transition-transform" onclick={saveStepRows}>Save steps</button>
-    <div class="text-xs text-muted mt-2 text-right min-h-[14px]">{stepsMsg}</div>
+    <div class="flex justify-between items-center text-xs mt-2 min-h-[14px]">
+      {#if st.missed.length}<button class="text-accent font-medium" onclick={() => (sheet = 'steps')}>{st.missed.length} {st.missed.length > 1 ? 'days' : 'day'} missing · Add ›</button>{:else}<span></span>{/if}
+      <span class="text-muted text-right">{stepsMsg}</span>
+    </div>
   </section>
 
   <section class="grid grid-cols-2 gap-2.5 mt-2.5">
@@ -191,6 +194,8 @@
 
 {#if sheet === 'reason'}
   <ReasonSheet dates={sum.missed} reasons={liveReasons} onclose={() => (sheet = 'none')} onsave={onReasons} />
+{:else if sheet === 'steps'}
+  <StepsSheet dates={st.missed} onclose={() => (sheet = 'none')} onsave={onMissingSteps} />
 {:else if sheet === 'settings'}
   <Settings {email} onclose={() => (sheet = 'none')} onreset={() => { input = ''; prefilled = false }} />
 {/if}
