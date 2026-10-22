@@ -7,7 +7,8 @@
 
 insert into public.bot_config (key, value) values
   ('telegram_token', 'PASTE_TOKEN_HERE'),
-  ('chat_id',        'PASTE_CHAT_ID_HERE')
+  ('chat_id',        'PASTE_CHAT_ID_HERE'),
+  ('enabled',        'true')
 on conflict (key) do update set value = excluded.value;
 
 select public.bot_send('HealthTracker reminders are on. First one comes at the next slot.');

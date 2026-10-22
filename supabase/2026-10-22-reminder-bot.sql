@@ -74,6 +74,7 @@ end $$;
 
 revoke all on function public.bot_send(text) from public, anon, authenticated;
 revoke all on function public.bot_tick() from public, anon, authenticated;
+grant execute on function public.bot_send(text) to service_role;   -- scripts/reminders.sh test
 
 -- The schedule: summer times. Mon–Sat = {1,2,3,4,5,6}; daily = default.
 delete from public.bot_sent; delete from public.bot_reminders;
