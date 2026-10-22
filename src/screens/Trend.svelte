@@ -2,7 +2,7 @@
   import type { Point } from '../lib/stats'
   import type { Gap } from '../lib/db'
   import { addDays, daysBetween, fmtDate, iso, parse, todayDate } from '../lib/dates'
-  let { points, gaps }: { points: Point[]; gaps: Gap[] } = $props()
+  let { points, gaps, metric = 'weight', onmetric }: { points: Point[]; gaps: Gap[]; metric?: 'weight' | 'steps'; onmetric?: (m: 'weight' | 'steps') => void } = $props()
 
   let range = $state(28)
   let tip = $state<{ x: number; y: number; html: string } | null>(null)
@@ -61,7 +61,12 @@
 </script>
 
 <div class="relative px-2.5 pb-2">
-  <div class="flex justify-end pb-1 pr-1">
+  <div class="flex justify-between pb-1 px-1">
+    <div class="inline-flex bg-surface rounded-lg p-0.5">
+      {#each [['weight', 'Weight'], ['steps', 'Steps']] as [m, label] (m)}
+        <button class="text-xs px-2.5 py-1 rounded-md {metric === m ? 'bg-surface-3 text-ink' : 'text-muted'}" onclick={() => onmetric?.(m as 'weight' | 'steps')}>{label}</button>
+      {/each}
+    </div>
     <div class="inline-flex bg-surface rounded-lg p-0.5">
       {#each [[28, '4w'], [84, '12w'], [0, 'All']] as [r, label] (r)}
         <button class="text-xs px-2.5 py-1 rounded-md {range === r ? 'bg-surface-3 text-ink' : 'text-muted'}" onclick={() => (range = r as number)}>{label}</button>

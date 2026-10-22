@@ -5,6 +5,7 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null default '',
   reset_at timestamptz,               -- set by "Start fresh"; devices clear local data when they see a newer value
+  steps_goal integer not null default 10000 check (steps_goal > 0 and steps_goal < 100000),
   created_at timestamptz not null default now()
 );
 
@@ -37,7 +38,17 @@ create table if not exists public.reasons (
   primary key (user_id, name)
 );
 
+create table if not exists public.steps (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  date date not null,                 -- the day the steps were walked (entered the next morning)
+  count integer not null check (count >= 0 and count < 100000),
+  updated_at timestamptz not null default now(),
+  deleted boolean not null default false,
+  primary key (user_id, date)
+);
+
 create index if not exists weights_user_updated on public.weights (user_id, updated_at);
+create index if not exists steps_user_updated on public.steps (user_id, updated_at);
 create index if not exists gaps_user_updated on public.gaps (user_id, updated_at);
 create index if not exists reasons_user_updated on public.reasons (user_id, updated_at);
 
@@ -45,6 +56,7 @@ alter table public.profiles enable row level security;
 alter table public.weights  enable row level security;
 alter table public.gaps     enable row level security;
 alter table public.reasons  enable row level security;
+alter table public.steps    enable row level security;
 
 drop policy if exists "own profile" on public.profiles;
 create policy "own profile" on public.profiles for all using (auth.uid() = id) with check (auth.uid() = id);
@@ -54,6 +66,8 @@ drop policy if exists "own gaps" on public.gaps;
 create policy "own gaps" on public.gaps for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 drop policy if exists "own reasons" on public.reasons;
 create policy "own reasons" on public.reasons for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "own steps" on public.steps;
+create policy "own steps" on public.steps for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- A profile row appears automatically for every account; the name comes from user metadata set at creation.
 create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$
@@ -72,6 +86,7 @@ begin
   delete from public.weights where user_id = auth.uid();
   delete from public.gaps    where user_id = auth.uid();
   delete from public.reasons where user_id = auth.uid();
+  delete from public.steps   where user_id = auth.uid();
   update public.profiles set reset_at = ts where id = auth.uid();
   return ts;
 end $$;

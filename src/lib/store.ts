@@ -1,4 +1,4 @@
-import { db, type Weight, type Gap, type Reason } from './db'
+import { db, setMeta, type Weight, type Gap, type Reason, type Steps } from './db'
 import { iso, todayDate, isEveningNow } from './dates'
 import { sync } from './sync'
 import { supabase } from './supabase'
@@ -21,6 +21,22 @@ export async function saveGapReasons(entries: { date: string; reason: string }[]
   void sync()
 }
 
+/** Steps for one or more past days (yesterday, or older days that were missed). One row per day; saving again replaces. */
+export async function saveSteps(entries: { date: string; count: number }[]) {
+  const now = new Date().toISOString()
+  const rows: Steps[] = entries.map(e => ({ date: e.date, count: Math.round(e.count), updatedAt: now, deleted: false, synced: 0 }))
+  await db.steps.bulkPut(rows)
+  void sync()
+}
+
+/** The daily steps goal lives on the profile so every device of this user sees the same line. */
+export async function setStepsGoal(goal: number) {
+  await setMeta('stepsGoal', String(goal))
+  if (!supabase) return
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session) await supabase.from('profiles').update({ steps_goal: goal }).eq('id', session.user.id)
+}
+
 export async function removeReason(name: string) {
   const now = new Date().toISOString()
   await db.reasons.put({ name, lastUsed: now, updatedAt: now, deleted: true, synced: 0 })
@@ -28,8 +44,8 @@ export async function removeReason(name: string) {
 }
 
 export async function loadAll() {
-  const [weights, gaps, reasons] = await Promise.all([db.weights.toArray(), db.gaps.toArray(), db.reasons.toArray()])
-  return { weights: weights.filter(w => !w.deleted), gaps: gaps.filter(g => !g.deleted), reasons: reasons.filter(r => !r.deleted).sort((a, b) => b.lastUsed.localeCompare(a.lastUsed)) }
+  const [weights, gaps, reasons, steps] = await Promise.all([db.weights.toArray(), db.gaps.toArray(), db.reasons.toArray(), db.steps.toArray()])
+  return { weights: weights.filter(w => !w.deleted), gaps: gaps.filter(g => !g.deleted), reasons: reasons.filter(r => !r.deleted).sort((a, b) => b.lastUsed.localeCompare(a.lastUsed)), steps: steps.filter(s => !s.deleted) }
 }
 
 export async function exportJson() {
@@ -44,11 +60,11 @@ export async function resetAll() {
   if (supabase) {
     const { data, error } = await supabase.rpc('reset_my_data')
     if (error) throw error
-    await db.transaction('rw', db.weights, db.gaps, db.reasons, db.meta, async () => {
-      await db.weights.clear(); await db.gaps.clear(); await db.reasons.clear()
+    await db.transaction('rw', db.weights, db.gaps, db.reasons, db.steps, db.meta, async () => {
+      await db.weights.clear(); await db.gaps.clear(); await db.reasons.clear(); await db.steps.clear()
       await db.meta.put({ key: 'resetAt', value: data as string })
     })
   } else {
-    await db.weights.clear(); await db.gaps.clear(); await db.reasons.clear()
+    await db.weights.clear(); await db.gaps.clear(); await db.reasons.clear(); await db.steps.clear()
   }
 }

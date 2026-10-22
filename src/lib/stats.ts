@@ -1,4 +1,4 @@
-import type { Weight, Gap } from './db'
+import type { Weight, Gap, Steps } from './db'
 import { addDays, daysBetween, iso, parse, todayDate } from './dates'
 
 export interface Point { date: string; kg: number; evening: boolean; avg: number; n: number }
@@ -52,4 +52,29 @@ export function streak(weights: Weight[]): number {
   let n = 0
   while (have.has(iso(d))) { n++; d = addDays(d, -1) }
   return n
+}
+
+// ---------- steps ----------
+export interface StepPoint { date: string; count: number; avg: number }
+
+/** Sorted live step days with a trailing 7-day average (mean of the days that have a count). */
+export function stepSeries(steps: Steps[]): StepPoint[] {
+  const s = steps.filter(x => !x.deleted).sort((a, b) => a.date.localeCompare(b.date))
+  return s.map(p => { const win = s.filter(q => { const d = daysBetween(parse(q.date), parse(p.date)); return d >= 0 && d < 7 }); return { date: p.date, count: p.count, avg: mean(win.map(q => q.count)) } })
+}
+
+export interface StepsSummary {
+  avg: number | null; n: number          // mean of the days logged in the 7 calendar days ending yesterday; n = how many of those 7
+  weekDelta: number | null               // that mean minus the one for the 7 days before, null unless both sides have >= 3 days
+  toEnter: string[]                       // yesterday always, plus any of the 6 days before it with no count; newest first
+}
+
+export function summarizeSteps(steps: Steps[]): StepsSummary {
+  const live = steps.filter(x => !x.deleted); const have = new Map(live.map(x => [x.date, x.count]))
+  const yesterday = addDays(todayDate(), -1)
+  const win = (end: Date) => { const out: number[] = []; for (let i = 0; i < 7; i++) { const c = have.get(iso(addDays(end, -i))); if (c !== undefined) out.push(c) } return out }
+  const w1 = win(yesterday), w0 = win(addDays(yesterday, -7))
+  const toEnter: string[] = []
+  for (let i = 1; i <= 7; i++) { const d = iso(addDays(todayDate(), -i)); if (i === 1 || !have.has(d)) toEnter.push(d) }
+  return { avg: w1.length >= 3 ? mean(w1) : null, n: w1.length, weekDelta: w1.length >= 3 && w0.length >= 3 ? mean(w1) - mean(w0) : null, toEnter }
 }

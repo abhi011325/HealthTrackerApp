@@ -9,8 +9,8 @@ let listeners: ((s: SyncState, pending: number) => void)[] = []
 export const onSync = (fn: (s: SyncState, pending: number) => void) => { listeners.push(fn); return () => { listeners = listeners.filter(l => l !== fn) } }
 const emit = async (s: SyncState) => { const n = await pendingCount(); listeners.forEach(l => l(s, n)) }
 export async function pendingCount() {
-  const [a, b, c] = await Promise.all([db.weights.where('synced').equals(0).count(), db.gaps.where('synced').equals(0).count(), db.reasons.where('synced').equals(0).count()])
-  return a + b + c
+  const [a, b, c, d] = await Promise.all([db.weights.where('synced').equals(0).count(), db.gaps.where('synced').equals(0).count(), db.reasons.where('synced').equals(0).count(), db.steps.where('synced').equals(0).count()])
+  return a + b + c + d
 }
 
 let running: Promise<void> | null = null
@@ -25,9 +25,10 @@ async function run() {
   await emit('syncing')
   try {
     // 0. A reset elsewhere wipes this device's copy before anything is pushed back up.
-    const { data: prof } = await supabase.from('profiles').select('reset_at').eq('id', uid).maybeSingle()
+    const { data: prof } = await supabase.from('profiles').select('reset_at, steps_goal').eq('id', uid).maybeSingle()
     const seenReset = (await getMeta('resetAt')) ?? ''
     if (prof?.reset_at && prof.reset_at > seenReset) { await clearAllLocal(); await setMeta('resetAt', prof.reset_at) }
+    if (prof?.steps_goal) await setMeta('stepsGoal', String(prof.steps_goal))
 
     // 1. Push
     const w = await db.weights.where('synced').equals(0).toArray()
@@ -48,16 +49,23 @@ async function run() {
       if (error) throw error
       await db.reasons.bulkPut(r.map(x => ({ ...x, synced: 1 })))
     }
+    const st = await db.steps.where('synced').equals(0).toArray()
+    if (st.length) {
+      const { error } = await supabase.from('steps').upsert(st.map(x => ({ user_id: uid, date: x.date, count: x.count, updated_at: x.updatedAt, deleted: x.deleted })))
+      if (error) throw error
+      await db.steps.bulkPut(st.map(x => ({ ...x, synced: 1 })))
+    }
 
     // 2. Pull anything newer than the last pull
     const since = (await getMeta('pulledAt')) ?? '1970-01-01T00:00:00Z'
     let newest = since
-    const [ws, gs, rs] = await Promise.all([
+    const [ws, gs, rs, ss] = await Promise.all([
       supabase.from('weights').select('*').gt('updated_at', since),
       supabase.from('gaps').select('*').gt('updated_at', since),
       supabase.from('reasons').select('*').gt('updated_at', since),
+      supabase.from('steps').select('*').gt('updated_at', since),
     ])
-    for (const q of [ws, gs, rs]) if (q.error) throw q.error
+    for (const q of [ws, gs, rs, ss]) if (q.error) throw q.error
     for (const row of ws.data ?? []) {
       const local = await db.weights.get(row.date)
       if (!local || local.updatedAt < row.updated_at) await db.weights.put({ date: row.date, kg: Number(row.kg), evening: row.evening, loggedAt: row.logged_at, updatedAt: row.updated_at, deleted: row.deleted, synced: 1 })
@@ -71,6 +79,11 @@ async function run() {
     for (const row of rs.data ?? []) {
       const local = await db.reasons.get(row.name)
       if (!local || local.updatedAt < row.updated_at) await db.reasons.put({ name: row.name, lastUsed: row.last_used, updatedAt: row.updated_at, deleted: row.deleted, synced: 1 })
+      if (row.updated_at > newest) newest = row.updated_at
+    }
+    for (const row of ss.data ?? []) {
+      const local = await db.steps.get(row.date)
+      if (!local || local.updatedAt < row.updated_at) await db.steps.put({ date: row.date, count: Number(row.count), updatedAt: row.updated_at, deleted: row.deleted, synced: 1 })
       if (row.updated_at > newest) newest = row.updated_at
     }
     await setMeta('pulledAt', newest)

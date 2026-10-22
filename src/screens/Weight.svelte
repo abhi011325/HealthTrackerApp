@@ -1,18 +1,21 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { liveQuery } from 'dexie'
-  import { db, type Weight, type Gap, type Reason } from '../lib/db'
-  import { series, summarize, streak } from '../lib/stats'
-  import { fmtDate, fmtDay, parse, todayDate, isEveningNow } from '../lib/dates'
-  import { saveToday, saveGapReasons } from '../lib/store'
+  import { db, getStepsGoal, DEFAULT_STEPS_GOAL, type Weight, type Gap, type Reason, type Steps } from '../lib/db'
+  import { series, summarize, streak, stepSeries, summarizeSteps } from '../lib/stats'
+  import { addDays, fmtDate, fmtDay, iso, parse, todayDate, isEveningNow } from '../lib/dates'
+  import { saveToday, saveGapReasons, saveSteps } from '../lib/store'
   import { onSync, sync, type SyncState } from '../lib/sync'
   import Trend from './Trend.svelte'
+  import StepsTrend from './StepsTrend.svelte'
   import ReasonSheet from './ReasonSheet.svelte'
   import Settings from './Settings.svelte'
 
   let { name, email }: { name: string; email: string } = $props()
 
-  let weights = $state<Weight[]>([]), gaps = $state<Gap[]>([]), reasons = $state<Reason[]>([])
+  let weights = $state<Weight[]>([]), gaps = $state<Gap[]>([]), reasons = $state<Reason[]>([]), steps = $state<Steps[]>([])
+  let stepsGoal = $state(DEFAULT_STEPS_GOAL), metric = $state<'weight' | 'steps'>('weight')
+  let stepInputs = $state<Record<string, string>>({}), stepsMsg = $state('')
   let syncState = $state<SyncState>('synced'), pending = $state(0)
   let trendOpen = $state(false), sheet = $state<'none' | 'reason' | 'settings'>('none')
   let input = $state(''), savedMsg = $state(''), prefilled = $state(false)
@@ -23,6 +26,11 @@
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   let popKey = $state(0)
   const points = $derived(series(weights))
+  const stepPoints = $derived(stepSeries(steps))
+  const st = $derived(summarizeSteps(steps))
+  const stepsByDate = $derived(new Map(steps.map(x => [x.date, x.count])))
+  const fmtN = (n: number) => Math.round(n).toLocaleString('en-IN')
+  const yesterday = iso(addDays(todayDate(), -1))
   const liveReasons = $derived(reasons.filter(r => !r.deleted).sort((a, b) => b.lastUsed.localeCompare(a.lastUsed)))
   const todayLabel = todayDate().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
   const fmt = (n: number) => n.toFixed(1)
@@ -33,6 +41,8 @@
       liveQuery(() => db.weights.toArray()).subscribe(v => { weights = v.filter(w => !w.deleted) }),
       liveQuery(() => db.gaps.toArray()).subscribe(v => { gaps = v.filter(g => !g.deleted) }),
       liveQuery(() => db.reasons.toArray()).subscribe(v => { reasons = v }),
+      liveQuery(() => db.steps.toArray()).subscribe(v => { steps = v.filter(x => !x.deleted) }),
+      liveQuery(() => db.meta.get('stepsGoal')).subscribe(() => { void getStepsGoal().then(g => (stepsGoal = g)) }),
     ]
     const off = onSync((s, n) => { syncState = s; pending = n })
     return () => { subs.forEach(s => s.unsubscribe()); off() }
@@ -58,6 +68,19 @@
     }
   }
   async function onReasons(entries: { date: string; reason: string }[]) { await saveGapReasons(entries); sheet = 'none' }
+
+  function onStepInput(date: string, e: Event) {
+    const digits = (e.target as HTMLInputElement).value.replace(/[^0-9]/g, '').slice(0, 5)
+    stepInputs[date] = digits ? Number(digits).toLocaleString('en-IN') : ''
+  }
+  async function saveStepRows() {
+    const entries = st.toEnter.map(d => ({ date: d, count: parseInt((stepInputs[d] ?? '').replace(/[^0-9]/g, ''), 10) })).filter(e => e.count > 0 && e.count < 100000)
+    if (!entries.length) return
+    await saveSteps(entries)
+    stepInputs = {}
+    stepsMsg = 'Saved ' + entries.map(e => `${fmtN(e.count)} for ${e.date === yesterday ? 'yesterday' : fmtDate(parse(e.date))}`).join(' · ')
+    setTimeout(() => (stepsMsg = ''), 3000)
+  }
 </script>
 
 <main class="min-h-screen max-w-md mx-auto px-5 pt-[max(14px,env(safe-area-inset-top))] pb-10 flex flex-col">
@@ -118,6 +141,24 @@
     <div class="text-xs text-muted mt-2 text-right min-h-[14px]">{savedMsg}</div>
   </section>
 
+  <section class="card rounded-2xl mt-2.5 p-3.5">
+    <div class="flex justify-between text-xs text-muted mb-2"><span>Steps</span><span>from the Health app</span></div>
+    <div class="flex flex-col gap-2">
+      {#each st.toEnter as d (d)}
+        <div class="flex items-center gap-2.5">
+          <div class="shrink-0 w-[118px] text-sm text-ink-2 leading-tight">
+            {d === yesterday ? 'Yesterday' : fmtDay(parse(d))}
+            <small class="block text-[11px] text-muted">{d === yesterday ? fmtDate(parse(d)) + (stepsByDate.has(d) ? ` · saved ${fmtN(stepsByDate.get(d)!)}` : '') : 'no steps logged'}</small>
+          </div>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" placeholder="steps" value={stepInputs[d] ?? ''} oninput={e => onStepInput(d, e)} onkeydown={e => e.key === 'Enter' && saveStepRows()}
+            class="flex-1 w-0 min-w-0 h-[46px] text-center text-[22px] font-semibold bg-surface border border-line rounded-2xl tnum outline-none focus:border-accent placeholder:text-sm placeholder:font-normal" />
+        </div>
+      {/each}
+    </div>
+    <button class="w-full h-12 mt-3 rounded-2xl bg-accent text-white font-semibold text-[15px] shadow-[0_6px_20px_rgba(57,135,229,.35)] active:scale-95 transition-transform" onclick={saveStepRows}>Save steps</button>
+    <div class="text-xs text-muted mt-2 text-right min-h-[14px]">{stepsMsg}</div>
+  </section>
+
   <section class="grid grid-cols-2 gap-2.5 mt-2.5">
     <div class="card rounded-2xl px-3.5 py-3">
       <div class="text-xs text-muted">This week vs last</div>
@@ -127,13 +168,24 @@
       <div class="text-xs text-muted">Since start{#if sum.startDate}&nbsp;· {fmtDate(parse(sum.startDate))}{/if}</div>
       <div class="text-xl font-semibold mt-0.5 tnum {sum.sinceStart !== null && sum.sinceStart < 0 ? 'text-ok' : ''}">{#if sum.sinceStart === null}—{:else}{signed(sum.sinceStart)}<span class="text-[13px] font-medium text-ink-2 ml-1">kg</span>{/if}</div>
     </div>
+    <div class="card rounded-2xl px-3.5 py-3 col-span-2 flex justify-between items-center">
+      <div>
+        <div class="text-xs text-muted">Steps · 7-day average</div>
+        <div class="text-xl font-semibold tnum">{#if st.avg === null}—<span class="text-[13px] font-medium text-ink-2 ml-1">{st.n ? `building, ${st.n} of 7` : 'no steps yet'}</span>{:else}{fmtN(st.avg)}<span class="text-[13px] font-medium text-ink-2 ml-1">{st.n} of 7 days</span>{/if}</div>
+      </div>
+      <div class="text-right text-[13px] tnum {st.weekDelta === null ? 'text-ink-2' : st.weekDelta < 0 ? 'text-danger' : 'text-ok'}">
+        {#if st.weekDelta !== null}{st.weekDelta < 0 ? '−' : '+'}{fmtN(Math.abs(st.weekDelta))}<small class="block text-[11px] text-muted">vs last week</small>{:else}<small class="block text-[11px] text-muted">goal {fmtN(stepsGoal)}</small>{/if}
+      </div>
+    </div>
   </section>
 
   <section class="card rounded-2xl mt-2.5">
     <button class="w-full flex justify-between items-center px-3.5 py-3.5 text-sm text-ink-2" onclick={() => (trendOpen = !trendOpen)}>
       <span>{trendOpen ? 'Hide trend' : 'Show trend'}</span><span class="text-muted transition-transform {trendOpen ? 'rotate-90' : ''}">›</span>
     </button>
-    {#if trendOpen}<Trend {points} {gaps} />{/if}
+    {#if trendOpen}
+      {#if metric === 'weight'}<Trend {points} {gaps} {metric} onmetric={m => (metric = m)} />{:else}<StepsTrend points={stepPoints} {gaps} goal={stepsGoal} {metric} onmetric={m => (metric = m)} />{/if}
+    {/if}
   </section>
 </main>
 

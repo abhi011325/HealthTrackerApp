@@ -1,6 +1,6 @@
 # HealthTracker
 
-A phone-installable web app for daily weight with a 7-day average. Local-first, syncs to Supabase, one account per family member.
+A phone-installable web app for daily weight and steps, each with a 7-day average. Local-first, syncs to Supabase, one account per family member.
 
 ## Run locally
 ```bash
@@ -10,7 +10,7 @@ npm run dev
 ```
 
 ## One-time setup
-1. Create a free Supabase project. In **SQL Editor**, run `supabase/schema.sql`.
+1. Create a free Supabase project. In **SQL Editor**, run `supabase/schema.sql`. (A project set up before 2026-10-22 needs `supabase/2026-10-22-steps.sql` once, for the steps table.)
 2. In **Authentication > Providers > Email**, turn **off** "Allow new users to sign up" (accounts are created by hand) and turn off "Confirm email".
 3. Put the project URL, anon key and service-role key in `.env.local` (see `.env.example`).
 4. Create an account: `scripts/create-user.sh "Name" email@example.com`. Hand the password over yourself. Reset one with `scripts/set-password.sh email@example.com`.

@@ -1,4 +1,4 @@
-# HealthTracker — build spec (v1: weight)
+# HealthTracker — build spec (v1: weight, v1.1: steps)
 
 Agreed with Abhishek on 2026-10-22 from the mockup in `HealthTracker/mockups/weight-screen.html`.
 
@@ -25,6 +25,13 @@ One screen a day, under 20 seconds: log the morning weight, see the 7-day averag
 5. **Tiles**: *This week vs last* = mean(readings in last 7 days) − mean(readings in the 7 before); dash with "not enough entries" unless both sides have ≥3 readings. *Since start* = current average − first reading.
 6. **Trend** (collapsed, "Show trend"): daily dots (hollow = evening), 7-day average line broken on gaps > 3 days, 4w/12w/All, y-axis clean 0.5 steps, x ticks first/middle/last. Gap bands shaded; label only when wide enough; touch/hover tooltip gives the day's daily + average, or the gap reason.
 
+## Steps (added 2026-10-22, from `mockups/steps-screen.html`)
+- **Entry card** under the weight card, with its own **Save steps** button, so steps can be logged on a day with no weight (travelling without a scale) and saving steps never touches the weight. One row per day: yesterday always (with "saved n" once entered), plus any of the previous six days with no count ("no steps logged"). Numbers are typed from the phone's own step counter; one count per day, saving again replaces. Older days are not editable.
+- **Tile** "Steps · 7-day average": mean of the days logged in the 7 calendar days ending yesterday, with "n of 7 days"; dash with "building, n of 7" below three days. Right side: change vs the 7 days before (red down, green up) when both sides have ≥3 days, else the goal.
+- **Trend**: the collapsed trend has a Weight / Steps switch. Steps shows daily bars (brighter at or above goal), the 7-day average line broken on gaps > 3 days, a dashed goal line, and the same 4w/12w/All ranges and touch tooltip. Missed-day reason bands carry over.
+- **Goal**: Settings > Steps goal (default 10,000), stored on `profiles.steps_goal` so every device agrees; mirrored locally in `meta.stepsGoal`.
+- No reasons flow for missing step days, no streaks, no plan awareness.
+
 ## Missed days and reasons
 - Missed = calendar days between the last entry and today (exclusive of today) with neither a weight nor a reason.
 - Sheet lists one row per missed day, each with a type-or-pick field. The list is that user's own past reasons (most recent first); no presets. Typing something new offers "Add …" and saves it to their list. "Use this for all days" appears when the first row is filled and others differ. Optional; never blocks.
@@ -36,10 +43,10 @@ One screen a day, under 20 seconds: log the morning weight, see the 7-day averag
 - `profiles.reset_at`: **Start fresh** calls `reset_my_data()` (deletes the user's rows server-side, stamps `reset_at`); every device clears its local copy when it sees a newer `reset_at`, so a reset holds across devices.
 
 ## Settings sheet
-Backup (download JSON of weights, gaps, reasons) · Change password · Start fresh (confirm, then reset as above) · Sign out.
+Backup (download JSON of weights, gaps, reasons, steps) · Steps goal · Change password · Start fresh (confirm, then reset as above) · Sign out.
 
 ## Database (`supabase/schema.sql`)
-`profiles(id, name, reset_at)`, `weights(user_id, date, kg, evening, logged_at, updated_at, deleted)`, `gaps(user_id, date, reason, updated_at, deleted)`, `reasons(user_id, name, last_used, updated_at, deleted)`. RLS on all: `auth.uid() = user_id`.
+`profiles(id, name, reset_at, steps_goal)`, `weights(user_id, date, kg, evening, logged_at, updated_at, deleted)`, `gaps(user_id, date, reason, updated_at, deleted)`, `reasons(user_id, name, last_used, updated_at, deleted)`, `steps(user_id, date, count, updated_at, deleted)`. RLS on all: `auth.uid() = user_id`.
 
 ## Out of scope for v1
 Plan awareness (phases, projections, targets), reminders, sharing between users, Google sign-in, export formats other than JSON, light theme.
