@@ -76,7 +76,7 @@ revoke all on function public.bot_send(text) from public, anon, authenticated;
 revoke all on function public.bot_tick() from public, anon, authenticated;
 grant execute on function public.bot_send(text) to service_role;   -- scripts/reminders.sh test
 
--- The schedule: summer times, one message at every block boundary, the SAME set every day including Sunday (his call 2026-10-22; he will tune Sundays later). Plus Sunday review and egg boils.
+-- The schedule: summer times, one message at every block boundary, the SAME 15 every day including Sunday (his call 2026-10-22; no Sunday review or egg-boil reminders, he will tune later).
 delete from public.bot_sent; delete from public.bot_reminders;
 insert into public.bot_reminders (label, time_ist, days, message) values
   ('wake', '06:00', '{0,1,2,3,4,5,6}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.'),
@@ -93,10 +93,7 @@ insert into public.bot_reminders (label, time_ist, days, message) values
   ('job-fixed', '18:30', '{0,1,2,3,4,5,6}', E'6:30 to 10:30. Job, fixed 4 hours.'),
   ('slot5', '20:30', '{0,1,2,3,4,5,6}', E'8:30. Slot 5: 100 g paneer with salt, pepper and salad, 3 boiled eggs.'),
   ('shutdown', '22:30', '{0,1,2,3,4,5,6}', E'10:30. Shut down, screens off.\nSlot 6: 30 g chana, or makhana, or 20 g walnuts, and tea.\nThen the walk and family time till 11:00.'),
-  ('lights-out', '23:00', '{0,1,2,3,4,5,6}', E'11:00. Lights out.'),
-  ('eggs-sun', '10:00', '{0}', E'Boil 15 eggs for the week. Roast the makhana if it''s this week''s snack.'),
-  ('eggs-wed', '10:00', '{3}', E'Boil the second 15 eggs.'),
-  ('review', '19:00', '{0}', E'7:00. Sunday review, 15 minutes: open the app. 7-day average vs last week, waist, workouts done, sleep nights held, floor or full week.');
+  ('lights-out', '23:00', '{0,1,2,3,4,5,6}', E'11:00. Lights out.');
 
 select cron.unschedule('bot-tick') where exists (select 1 from cron.job where jobname = 'bot-tick');
 select cron.schedule('bot-tick', '* * * * *', 'select public.bot_tick()');
