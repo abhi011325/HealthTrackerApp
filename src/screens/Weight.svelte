@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { liveQuery } from 'dexie'
-  import { db, getStepsGoal, DEFAULT_STEPS_GOAL, type Weight, type Gap, type Reason, type Steps } from '../lib/db'
-  import { series, summarize, streak, stepSeries, summarizeSteps } from '../lib/stats'
+  import { db, getStepsGoal, getGoalKg, DEFAULT_STEPS_GOAL, type Weight, type Gap, type Reason, type Steps, type EarnedDay } from '../lib/db'
+  import { series, summarize, streak, stepSeries, summarizeSteps, dayVerdict } from '../lib/stats'
   import { addDays, fmtDate, fmtDay, iso, parse, todayDate, isEveningNow } from '../lib/dates'
-  import { saveToday, saveGapReasons, saveSteps } from '../lib/store'
+  import { saveToday, saveGapReasons, saveSteps, setTodayTaken } from '../lib/store'
   import { onSync, sync, type SyncState } from '../lib/sync'
   import Trend from './Trend.svelte'
   import StepsTrend from './StepsTrend.svelte'
@@ -14,8 +14,8 @@
 
   let { name, email }: { name: string; email: string } = $props()
 
-  let weights = $state<Weight[]>([]), gaps = $state<Gap[]>([]), reasons = $state<Reason[]>([]), steps = $state<Steps[]>([])
-  let stepsGoal = $state(DEFAULT_STEPS_GOAL), metric = $state<'weight' | 'steps'>('weight')
+  let weights = $state<Weight[]>([]), gaps = $state<Gap[]>([]), reasons = $state<Reason[]>([]), steps = $state<Steps[]>([]), earned = $state<EarnedDay[]>([])
+  let stepsGoal = $state(DEFAULT_STEPS_GOAL), goalKg = $state<number | null>(null), metric = $state<'weight' | 'steps'>('weight')
   let stepInput = $state(''), stepsMsg = $state('')
   let syncState = $state<SyncState>('synced'), pending = $state(0)
   let trendOpen = $state(false), sheet = $state<'none' | 'reason' | 'steps' | 'settings'>('none')
@@ -23,6 +23,7 @@
 
   const sum = $derived(summarize(weights, gaps))
   const days = $derived(streak(weights))
+  const day = $derived(dayVerdict(sum, earned, goalKg))
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   let popKey = $state(0)
@@ -44,6 +45,8 @@
       liveQuery(() => db.reasons.toArray()).subscribe(v => { reasons = v }),
       liveQuery(() => db.steps.toArray()).subscribe(v => { steps = v.filter(x => !x.deleted) }),
       liveQuery(() => db.meta.get('stepsGoal')).subscribe(() => { void getStepsGoal().then(g => (stepsGoal = g)) }),
+      liveQuery(() => db.earned.toArray()).subscribe(v => { earned = v }),
+      liveQuery(() => db.meta.get('goalKg')).subscribe(() => { void getGoalKg().then(g => (goalKg = g)) }),
     ]
     const off = onSync((s, n) => { syncState = s; pending = n })
     return () => { subs.forEach(s => s.unsubscribe()); off() }
@@ -128,6 +131,18 @@
     {/if}
     {#if sum.avgBuilding}
       <div class="row"><span class="text-muted">Average</span><span class="text-ink-2">building, {sum.avgBuilding} of 7</span></div>
+    {/if}
+  </section>
+
+  <!-- Day card: the earned-day verdict (HealthTracker/EARNED-DAY.md). Visible all day; Take today can be tapped at any hour. -->
+  <section class="card rounded-2xl mt-2.5 px-3.5 py-3 flex items-center gap-3">
+    <i class="shrink-0 w-2.5 h-2.5 rounded-full {day.state === 'earned' || day.state === 'taken' || day.state === 'sunday' ? 'bg-ok shadow-[0_0_0_4px_rgba(25,158,112,.18)]' : 'bg-muted'}"></i>
+    <div class="flex-1 min-w-0">
+      <div class="text-[15px] font-semibold {day.state === 'hold' || day.state === 'noentry' ? 'text-ink-2' : ''}">{day.title}</div>
+      <div class="text-xs text-muted mt-0.5 leading-snug tnum">{day.detail}{#if day.state === 'taken'}&nbsp;<button class="text-accent font-medium" onclick={() => setTodayTaken(false)}>Undo</button>{/if}</div>
+    </div>
+    {#if day.canTake}
+      <button class="shrink-0 h-10 px-3.5 rounded-xl bg-accent text-white font-semibold text-sm shadow-[0_6px_20px_rgba(57,135,229,.35)] active:scale-95 transition-transform" onclick={() => setTodayTaken(true)}>Take today</button>
     {/if}
   </section>
 
