@@ -27,3 +27,6 @@ It builds with the right base path and force-pushes `dist/` to `gh-pages`. (`dep
 - Android: open it in Chrome, menu, **Install app**.
 
 See `SPEC.md` for how the app behaves.
+
+## Telegram reminders
+The schedule lives in the database (`bot_reminders`), pg_cron runs `bot_tick()` every minute and posts due messages to Telegram via pg_net. Set up once with `supabase/2026-10-22-reminder-bot.sql`, then the token with `supabase/bot-token.sql` (run by the owner). Manage from the Mac with `scripts/reminders.sh` (`list`, `add`, `set`, `rm`, `shift 60` for winter, `pause`, `resume`, `test`).
