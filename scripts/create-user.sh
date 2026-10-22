@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 [ -f .env.local ] || { echo "missing .env.local"; exit 1; }
 set -a; source .env.local; set +a
 NAME="${1:?name}"; EMAIL="${2:?email}"
-PASS="$(LC_ALL=C tr -dc 'A-Za-z2-9' </dev/urandom | tr -d 'IlO0' | head -c 14)"
+PASS="$(head -c 400 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z2-9' | tr -d 'IlO0' | cut -c1-14)"
 RESP="$(curl -sS -X POST "$VITE_SUPABASE_URL/auth/v1/admin/users" \
   -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" -H "Content-Type: application/json" \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\",\"email_confirm\":true,\"user_metadata\":{\"name\":\"$NAME\"}}")"
