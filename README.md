@@ -16,7 +16,11 @@ npm run dev
 4. Create an account: `scripts/create-user.sh "Name" email@example.com`. Hand the password over yourself. Reset one with `scripts/set-password.sh email@example.com`.
 
 ## Deploy
-Pushes to `main` build and publish to GitHub Pages via `deploy/github-pages.yml` (move it to `.github/workflows/` once hosting is decided; pushing it needs a token with the `workflow` scope). Set repository **Variables** `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (the anon key is safe to expose; row-level security protects the data).
+The site is GitHub Pages at `https://abhi011325.github.io/HealthTrackerApp/`, served from the `gh-pages` branch. Publish a new version with:
+```bash
+scripts/deploy.sh
+```
+It builds with the right base path and force-pushes `dist/` to `gh-pages`. (`deploy/github-pages.yml` is an optional Actions workflow for push-to-deploy; it needs a token with the `workflow` scope.)
 
 ## Install on a phone
 - iPhone: open the address in Safari, Share, **Add to Home Screen**.

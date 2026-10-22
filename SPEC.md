@@ -9,7 +9,7 @@ One screen a day, under 20 seconds: log the morning weight, see the 7-day averag
 - Svelte 5 + TypeScript + Vite, Tailwind 4, dark only.
 - PWA (`vite-plugin-pwa`): installable on iPhone (Safari > Add to Home Screen) and Android (Chrome > Install), works offline, auto-updates on next open.
 - Data on the phone in IndexedDB (Dexie). Source of record is Supabase (Postgres) with row-level security.
-- Hosting: static files on GitHub Pages, deployed by GitHub Actions on push to `main`.
+- Hosting: static files on GitHub Pages (`gh-pages` branch, public repo), published with `scripts/deploy.sh`.
 - No paid services. The only secret is the Supabase service-role key, kept in `.env.local` on the Mac for the account scripts; the app ships only the public anon key.
 
 ## Accounts
