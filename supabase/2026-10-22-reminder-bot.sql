@@ -76,26 +76,30 @@ revoke all on function public.bot_send(text) from public, anon, authenticated;
 revoke all on function public.bot_tick() from public, anon, authenticated;
 grant execute on function public.bot_send(text) to service_role;   -- scripts/reminders.sh test
 
--- The schedule: summer times. Mon–Sat = {1,2,3,4,5,6}; daily = default.
+-- The schedule: summer times, one message at every block boundary (his ask), food line inside when a slot starts then. Mon–Sat = {1..6}.
 delete from public.bot_sent; delete from public.bot_reminders;
 insert into public.bot_reminders (label, time_ist, days, message) values
-  ('wake',        '06:00', '{0,1,2,3,4,5,6}', 'Good morning. Water, then weigh in. Log it and yesterday''s steps in the app.'),
-  ('kuhu-am',     '06:30', '{1,2,3,4,5,6}',   'Kuhu: breakfast, then walk and talk till she leaves. Coffee if you want it.'),
-  ('workout',     '07:00', '{1,2,3,4,5,6}',   'Workout. Fasted. Go.'),
-  ('slot1',       '08:30', '{1,2,3,4,5,6}',   'Slot 1: whey in water + 2-egg omelette. Job hours start.'),
-  ('slot2',       '11:30', '{0,1,2,3,4,5,6}', 'Slot 2: 200 g dahi, salt and jeera.'),
-  ('projects',    '12:30', '{1,2,3,4,5,6}',   'Personal projects till 3. First 15 minutes: today''s journey clip or photo.'),
-  ('slot3',       '15:00', '{0,1,2,3,4,5,6}', 'Slot 3, lunch with Kuhu: salad and 2 boiled eggs first, then 1 roti, dal, sabzi.'),
-  ('kuhu-pm',     '15:30', '{1,2,3,4,5,6}',   'Kuhu: walk and talk.'),
-  ('no-caffeine', '16:00', '{0,1,2,3,4,5,6}', 'No caffeine from now.'),
-  ('slot4',       '17:30', '{0,1,2,3,4,5,6}', 'Slot 4: whey in water. Then Kuhu''s studies till 6:30.'),
-  ('shift',       '18:30', '{1,2,3,4,5,6}',   'Fixed job hours start. Till 10:30.'),
-  ('slot5',       '20:30', '{0,1,2,3,4,5,6}', 'Slot 5: 100 g paneer with salt, pepper and salad, 3 boiled eggs.'),
-  ('bedtime',     '22:30', '{0,1,2,3,4,5,6}', 'Bedtime alarm. Screens off. Slot 6: chana, makhana or walnuts, and tea. Then the walk.'),
-  ('lights-out',  '23:00', '{0,1,2,3,4,5,6}', 'Lights out.'),
-  ('review',      '19:00', '{0}',             'Sunday review, 15 minutes: open the app. 7-day average vs last week, waist, workouts done, sleep nights held, floor or full week.'),
-  ('eggs-sun',    '10:00', '{0}',             'Boil 15 eggs for the week. Roast the makhana if it''s this week''s snack.'),
-  ('eggs-wed',    '10:00', '{3}',             'Boil the second 15 eggs.');
+  ('wake', '06:00', '{0,1,2,3,4,5,6}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.'),
+  ('kuhu-am', '06:30', '{1,2,3,4,5,6}', E'6:30 to 7:00. Kuhu: her breakfast, then walk and talk till she leaves. Black coffee or americano if you want it.'),
+  ('workout', '07:00', '{1,2,3,4,5,6}', E'7:00 to 8:00. Workout, fasted.'),
+  ('get-ready', '08:00', '{1,2,3,4,5,6}', E'8:00 to 8:30. Shower, get ready. Make the omelette.'),
+  ('job-flex', '08:30', '{1,2,3,4,5,6}', E'8:30 to 12:30. Job, flexible 4 hours.\nSlot 1 now: 1 scoop whey in water, 2-egg omelette.'),
+  ('slot2', '11:30', '{0,1,2,3,4,5,6}', E'11:30. Slot 2: 200 g Amul dahi, salt and jeera.'),
+  ('projects-1', '12:30', '{1,2,3,4,5,6}', E'12:30 to 3:00. Personal projects. First 15 minutes: today''s journey clip or photo.'),
+  ('slot3', '15:00', '{0,1,2,3,4,5,6}', E'3:00 to 3:30. Slot 3, lunch with Kuhu: salad and 2 boiled eggs first, then 1 roti, 1 cup dal, sabzi.'),
+  ('kuhu-pm', '15:30', '{1,2,3,4,5,6}', E'3:30 to 4:00. Kuhu: walk and talk.'),
+  ('projects-2', '16:00', '{1,2,3,4,5,6}', E'4:00 to 5:30. Personal projects. No caffeine from now.'),
+  ('no-caffeine', '16:00', '{0}', E'4:00. No caffeine from now.'),
+  ('slot4', '17:30', '{1,2,3,4,5,6}', E'5:30 to 6:30. Slot 4: 1 scoop whey in water. Then Kuhu''s studies.'),
+  ('slot4-sun', '17:30', '{0}', E'5:30. Slot 4: 1 scoop whey in water.'),
+  ('job-fixed', '18:30', '{1,2,3,4,5,6}', E'6:30 to 10:30. Job, fixed 4 hours.'),
+  ('slot5', '20:30', '{0,1,2,3,4,5,6}', E'8:30. Slot 5: 100 g paneer with salt, pepper and salad, 3 boiled eggs.'),
+  ('shutdown', '22:30', '{0,1,2,3,4,5,6}', E'10:30. Shut down, screens off.\nSlot 6: 30 g chana, or makhana, or 20 g walnuts, and tea.\nThen the walk and family time till 11:00.'),
+  ('lights-out', '23:00', '{0,1,2,3,4,5,6}', E'11:00. Lights out.'),
+  ('sunday', '08:30', '{0}', E'Sunday. No job, no projects, no session. One long family activity that involves moving. Free meal with the family at one meal today.'),
+  ('eggs-sun', '10:00', '{0}', E'Boil 15 eggs for the week. Roast the makhana if it''s this week''s snack.'),
+  ('eggs-wed', '10:00', '{3}', E'Boil the second 15 eggs.'),
+  ('review', '19:00', '{0}', E'7:00. Sunday review, 15 minutes: open the app. 7-day average vs last week, waist, workouts done, sleep nights held, floor or full week.');
 
 select cron.unschedule('bot-tick') where exists (select 1 from cron.job where jobname = 'bot-tick');
 select cron.schedule('bot-tick', '* * * * *', 'select public.bot_tick()');
