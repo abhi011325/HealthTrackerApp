@@ -1,4 +1,4 @@
-# HealthTracker — build spec (v1: weight, v1.1: steps)
+# HealthTracker — build spec (v1: weight, v1.1: steps, v1.2: earned day)
 
 Agreed with Abhishek on 2026-10-22 from the mockup in `HealthTracker/mockups/weight-screen.html`.
 
@@ -32,6 +32,13 @@ One screen a day, under 20 seconds: log the morning weight, see the 7-day averag
 - **Goal**: Settings > Steps goal (default 10,000), stored on `profiles.steps_goal` so every device agrees; mirrored locally in `meta.stepsGoal`.
 - No reasons flow for missing step days, no streaks, no plan awareness.
 
+## Earned day (added 2026-10-22, from `mockups/earned-day.html`; rule in `HealthTracker/EARNED-DAY.md`)
+- **Day card** under the status card, visible all day. States: *Earned day* (green, the two numbers that earned it, **Take today** button), *Day taken* (green, "Food and the workout are your call today. Steps and the sleep window stay." + Undo), *Sunday* (green, "Your free day: no diet, no session."), *Hold the plan today* (grey, the first rule that failed), *Log today's weight* (no reading yet).
+- **Rule**, both rates fixed at 0.7 kg/week. Above the goal weight: week-vs-last (rounded to 0.1) ≤ −0.7, pace since the first reading ≤ −0.7 kg/week, and no taken day in the last 7 days. At or below the goal (7-day average ≤ goal): only the 7-day rule. Sunday is never a taken day. Needs 3+ readings on both sides of the week comparison.
+- **Take today** writes `earned_days(date)` for today; tapping Undo the same day soft-deletes it. Untaken days are not recorded, so a green card can stay green on later days.
+- **Goal weight**: Settings > Goal weight, per user on `profiles.goal_kg` (nullable; "not set" until chosen; treated as "above goal" while unset), mirrored in `meta.goalKg`.
+- Not built: the maintenance ceiling (goal + 3 kg → 4-week cut banner).
+
 ## Missed days and reasons
 - Missed = calendar days between the last entry and today (exclusive of today) with neither a weight nor a reason.
 - Sheet lists one row per missed day, each with a type-or-pick field. The list is that user's own past reasons (most recent first); no presets. Typing something new offers "Add …" and saves it to their list. "Use this for all days" appears when the first row is filled and others differ. Optional; never blocks.
@@ -43,10 +50,10 @@ One screen a day, under 20 seconds: log the morning weight, see the 7-day averag
 - `profiles.reset_at`: **Start fresh** calls `reset_my_data()` (deletes the user's rows server-side, stamps `reset_at`); every device clears its local copy when it sees a newer `reset_at`, so a reset holds across devices.
 
 ## Settings sheet
-Backup (download JSON of weights, gaps, reasons, steps) · Steps goal · Change password · Start fresh (confirm, then reset as above) · Sign out.
+Backup (download JSON of weights, gaps, reasons, steps, earned days) · Goal weight · Steps goal · Change password · Start fresh (confirm, then reset as above) · Sign out.
 
 ## Database (`supabase/schema.sql`)
-`profiles(id, name, reset_at, steps_goal)`, `weights(user_id, date, kg, evening, logged_at, updated_at, deleted)`, `gaps(user_id, date, reason, updated_at, deleted)`, `reasons(user_id, name, last_used, updated_at, deleted)`, `steps(user_id, date, count, updated_at, deleted)`. RLS on all: `auth.uid() = user_id`.
+`profiles(id, name, reset_at, steps_goal)`, `weights(user_id, date, kg, evening, logged_at, updated_at, deleted)`, `gaps(user_id, date, reason, updated_at, deleted)`, `reasons(user_id, name, last_used, updated_at, deleted)`, `steps(user_id, date, count, updated_at, deleted)`, `earned_days(user_id, date, updated_at, deleted)`; `profiles.goal_kg`. RLS on all: `auth.uid() = user_id`.
 
 ## Out of scope for v1
 Plan awareness (phases, projections, targets), reminders, sharing between users, Google sign-in, export formats other than JSON, light theme.
