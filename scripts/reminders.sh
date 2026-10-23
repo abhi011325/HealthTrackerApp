@@ -8,6 +8,7 @@
 #   scripts/reminders.sh shift 60          # winter: every reminder fires 60 min later; 0 for summer
 #   scripts/reminders.sh pause | resume
 #   scripts/reminders.sh test "message"    # sends one message now
+#   scripts/reminders.sh log [hours]       # recent sends with Telegram status (default 24 h)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 [ -f .env.local ] || { echo "missing .env.local"; exit 1; }
@@ -42,6 +43,9 @@ for r in rows:
   pause)  q -X POST "$API/bot_config" -H "Prefer: resolution=merge-duplicates,return=representation" -d '{"key":"enabled","value":"false"}' ;;
   resume) q -X POST "$API/bot_config" -H "Prefer: resolution=merge-duplicates,return=representation" -d '{"key":"enabled","value":"true"}' ;;
   test)  q -X POST "$API/rpc/bot_send" -d "{\"msg\":$(jsonstr "$2")}" ;;
-  *) sed -n 2,11p "$0"; exit 1 ;;
+  log)   q -X POST "$API/rpc/bot_log" -d "{\"hours\":${2:-24}}" | python3 -c '
+import json,sys
+for r in json.load(sys.stdin): print(f'"'"'{r["sent_at_ist"]}  {r["label"]:<12} try {r["attempts"]}  {r["status"] or "-":<4} {r["error"] or ""}'"'"')' ;;
+  *) sed -n 2,12p "$0"; exit 1 ;;
 esac
 echo
