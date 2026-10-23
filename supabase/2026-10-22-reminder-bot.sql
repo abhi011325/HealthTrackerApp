@@ -76,7 +76,7 @@ revoke all on function public.bot_send(text) from public, anon, authenticated;
 revoke all on function public.bot_tick() from public, anon, authenticated;
 grant execute on function public.bot_send(text) to service_role;   -- scripts/reminders.sh test
 
--- The schedule: summer times, one message at every block boundary, every day incl. Sunday. Food slots carry the weekly rotation from PLAN.md section 5 (lunch eggs Sun/Mon/Wed/Fri, paneer Tue/Thu/Sat; dinner 3 or 2 eggs; snack chana/makhana/walnuts/pistachios/pumpkin seeds).
+-- The schedule: summer times, one message at every block boundary, every day incl. Sunday. Food slots carry the weekly rotation from PLAN.md section 5 (lunch eggs Sun/Mon/Wed/Fri, paneer Tue/Thu/Sat; dinner 3 or 2 eggs; one night snack per weekday: chana, pumpkin, peanuts, watermelon seeds, sunflower, pistachio, makhana).
 delete from public.bot_sent; delete from public.bot_reminders;
 insert into public.bot_reminders (label, time_ist, days, message) values
   ('wake', '06:00', '{0,1,2,3,4,5,6}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.'),
@@ -94,11 +94,13 @@ insert into public.bot_reminders (label, time_ist, days, message) values
   ('job-fixed', '18:30', '{0,1,2,3,4,5,6}', E'6:30 to 10:30. Job, fixed 4 hours.'),
   ('slot5-2eggs', '20:30', '{2,4,6}', E'8:30. Slot 5: 100 g FruBon paneer with salt, pepper and salad, 2 boiled eggs.'),
   ('slot5-3eggs', '20:30', '{0,1,3,5}', E'8:30. Slot 5: 100 g FruBon paneer with salt, pepper and salad, 3 boiled eggs.'),
-  ('shutdown-chana', '22:30', '{1,6}', E'10:30. Shut down, screens off.\nSlot 6: 30 g roasted chana, and tea.\nThen the walk and family time till 11:00.'),
-  ('shutdown-makhana', '22:30', '{2,0}', E'10:30. Shut down, screens off.\nSlot 6: 30 g roasted makhana, and tea.\nThen the walk and family time till 11:00.'),
-  ('shutdown-pista', '22:30', '{4}', E'10:30. Shut down, screens off.\nSlot 6: 20 g pistachios, and tea.\nThen the walk and family time till 11:00.'),
-  ('shutdown-pumpkin', '22:30', '{5}', E'10:30. Shut down, screens off.\nSlot 6: 20 g pumpkin seeds, and tea.\nThen the walk and family time till 11:00.'),
-  ('shutdown-walnuts', '22:30', '{3}', E'10:30. Shut down, screens off.\nSlot 6: 20 g walnuts, 5 halves, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-fri', '22:30', '{5}', E'10:30. Shut down, screens off.\nSlot 6: 20 g sunflower seeds, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-mon', '22:30', '{1}', E'10:30. Shut down, screens off.\nSlot 6: 30 g roasted chana, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-sat', '22:30', '{6}', E'10:30. Shut down, screens off.\nSlot 6: 20 g roasted pistachios, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-sun', '22:30', '{0}', E'10:30. Shut down, screens off.\nSlot 6: 30 g roasted makhana, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-thu', '22:30', '{4}', E'10:30. Shut down, screens off.\nSlot 6: 20 g watermelon seeds, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-tue', '22:30', '{2}', E'10:30. Shut down, screens off.\nSlot 6: 20 g pumpkin seeds, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-wed', '22:30', '{3}', E'10:30. Shut down, screens off.\nSlot 6: 20 g rock-salt roasted peanuts, and tea.\nThen the walk and family time till 11:00.'),
   ('lights-out', '23:00', '{0,1,2,3,4,5,6}', E'11:00. Lights out.');
 
 select cron.unschedule('bot-tick') where exists (select 1 from cron.job where jobname = 'bot-tick');
