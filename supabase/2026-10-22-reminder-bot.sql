@@ -76,7 +76,7 @@ revoke all on function public.bot_send(text) from public, anon, authenticated;
 revoke all on function public.bot_tick() from public, anon, authenticated;
 grant execute on function public.bot_send(text) to service_role;   -- scripts/reminders.sh test
 
--- The schedule: summer times, one message at every block boundary, every day incl. Sunday. Food slots carry the weekly rotation from PLAN.md section 5 (lunch eggs Sun/Mon/Wed/Fri, paneer Tue/Thu/Sat; dinner 3 or 2 eggs; one night snack per weekday: chana, pumpkin, peanuts, watermelon seeds, sunflower, pistachio, makhana).
+-- The schedule: summer times, one message at every block boundary, every day incl. Sunday. Food slots carry the weekly rotation from PLAN.md section 5 (11:30 fruit per day; lunch eggs Sun/Mon/Wed/Fri, paneer Tue/Thu/Sat; dinner 3 or 2 eggs; night snack per day).
 delete from public.bot_sent; delete from public.bot_reminders;
 insert into public.bot_reminders (label, time_ist, days, message) values
   ('wake', '06:00', '{0,1,2,3,4,5,6}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.'),
@@ -84,7 +84,13 @@ insert into public.bot_reminders (label, time_ist, days, message) values
   ('workout', '07:00', '{0,1,2,3,4,5,6}', E'7:00 to 8:00. Workout, fasted.'),
   ('get-ready', '08:00', '{0,1,2,3,4,5,6}', E'8:00 to 8:30. Shower, get ready. Make the omelette.'),
   ('job-flex', '08:30', '{0,1,2,3,4,5,6}', E'8:30 to 12:30. Job, flexible 4 hours.\nSlot 1 now: 1 scoop whey in water, 2-egg omelette.'),
-  ('slot2', '11:30', '{0,1,2,3,4,5,6}', E'11:30. Slot 2: 200 g Amul dahi with berries or one chopped fruit.'),
+  ('slot2-fri', '11:30', '{5}', E'11:30. Slot 2: 200 g Amul dahi with 50 g frozen blueberries.'),
+  ('slot2-mon', '11:30', '{1}', E'11:30. Slot 2: 200 g Amul dahi with 1 small banana.'),
+  ('slot2-sat', '11:30', '{6}', E'11:30. Slot 2: 200 g Amul dahi with 1 guava.'),
+  ('slot2-sun', '11:30', '{0}', E'11:30. Slot 2: 200 g Amul dahi with 100 g pomegranate.'),
+  ('slot2-thu', '11:30', '{4}', E'11:30. Slot 2: 200 g Amul dahi with 1 chopped apple.'),
+  ('slot2-tue', '11:30', '{2}', E'11:30. Slot 2: 200 g Amul dahi with 50 g frozen mixed berries.'),
+  ('slot2-wed', '11:30', '{3}', E'11:30. Slot 2: 200 g Amul dahi with 150 g papaya.'),
   ('projects-1', '12:30', '{0,1,2,3,4,5,6}', E'12:30 to 3:00. Personal projects. First 15 minutes: today''s journey clip or photo.'),
   ('slot3-eggs', '15:00', '{0,1,3,5}', E'3:00 to 3:30. Slot 3, lunch with Kuhu: salad and 2 boiled eggs first, then 1 roti, 1 cup dal, sabzi.'),
   ('slot3-paneer', '15:00', '{2,4,6}', E'3:00 to 3:30. Slot 3, lunch with Kuhu: salad and 100 g FruBon paneer cubes first, then 1 roti, 1 cup dal, sabzi.'),
