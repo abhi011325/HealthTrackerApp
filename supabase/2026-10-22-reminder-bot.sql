@@ -76,7 +76,7 @@ revoke all on function public.bot_send(text) from public, anon, authenticated;
 revoke all on function public.bot_tick() from public, anon, authenticated;
 grant execute on function public.bot_send(text) to service_role;   -- scripts/reminders.sh test
 
--- The schedule: summer times, one message at every block boundary, every day. Food slots carry the weekly rotation from PLAN.md section 5 (lunch eggs Mon/Wed/Fri, paneer Tue/Thu/Sat, free meal Sun; dinner 3 or 2 eggs; snack chana/makhana/walnuts; Sunday 5:30 ready shake).
+-- The schedule: summer times, one message at every block boundary, every day incl. Sunday. Food slots carry the weekly rotation from PLAN.md section 5 (lunch eggs Sun/Mon/Wed/Fri, paneer Tue/Thu/Sat; dinner 3 or 2 eggs; snack chana/makhana/walnuts/pistachios/pumpkin seeds).
 delete from public.bot_sent; delete from public.bot_reminders;
 insert into public.bot_reminders (label, time_ist, days, message) values
   ('wake', '06:00', '{0,1,2,3,4,5,6}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.'),
@@ -84,21 +84,21 @@ insert into public.bot_reminders (label, time_ist, days, message) values
   ('workout', '07:00', '{0,1,2,3,4,5,6}', E'7:00 to 8:00. Workout, fasted.'),
   ('get-ready', '08:00', '{0,1,2,3,4,5,6}', E'8:00 to 8:30. Shower, get ready. Make the omelette.'),
   ('job-flex', '08:30', '{0,1,2,3,4,5,6}', E'8:30 to 12:30. Job, flexible 4 hours.\nSlot 1 now: 1 scoop whey in water, 2-egg omelette.'),
-  ('slot2', '11:30', '{0,1,2,3,4,5,6}', E'11:30. Slot 2: 200 g Amul dahi, salt and jeera, or cucumber raita.'),
+  ('slot2', '11:30', '{0,1,2,3,4,5,6}', E'11:30. Slot 2: 200 g Amul dahi with berries or one chopped fruit.'),
   ('projects-1', '12:30', '{0,1,2,3,4,5,6}', E'12:30 to 3:00. Personal projects. First 15 minutes: today''s journey clip or photo.'),
-  ('slot3-eggs', '15:00', '{1,3,5}', E'3:00 to 3:30. Slot 3, lunch with Kuhu: salad and 2 boiled eggs first, then 1 roti, 1 cup dal, sabzi.'),
+  ('slot3-eggs', '15:00', '{0,1,3,5}', E'3:00 to 3:30. Slot 3, lunch with Kuhu: salad and 2 boiled eggs first, then 1 roti, 1 cup dal, sabzi.'),
   ('slot3-paneer', '15:00', '{2,4,6}', E'3:00 to 3:30. Slot 3, lunch with Kuhu: salad and 100 g FruBon paneer cubes first, then 1 roti, 1 cup dal, sabzi.'),
-  ('slot3-sun', '15:00', '{0}', E'3:00 to 3:30. Slot 3, lunch with the family: today''s free meal. Eat what you like, stop when full, no second helping.'),
   ('kuhu-pm', '15:30', '{0,1,2,3,4,5,6}', E'3:30 to 4:00. Kuhu: walk and talk.'),
   ('projects-2', '16:00', '{0,1,2,3,4,5,6}', E'4:00 to 5:30. Personal projects. No caffeine from now.'),
-  ('slot4', '17:30', '{1,2,3,4,5,6}', E'5:30 to 6:30. Slot 4: 1 scoop whey in water. Then Kuhu''s studies.'),
-  ('slot4-sun', '17:30', '{0}', E'5:30 to 6:30. Slot 4: Yoga Bar cold coffee protein shake, 250 ml. Then Kuhu''s studies.'),
+  ('slot4', '17:30', '{0,1,2,3,4,5,6}', E'5:30 to 6:30. Slot 4: 1 scoop whey in water. Then Kuhu''s studies.'),
   ('job-fixed', '18:30', '{0,1,2,3,4,5,6}', E'6:30 to 10:30. Job, fixed 4 hours.'),
   ('slot5-2eggs', '20:30', '{2,4,6}', E'8:30. Slot 5: 100 g FruBon paneer with salt, pepper and salad, 2 boiled eggs.'),
   ('slot5-3eggs', '20:30', '{0,1,3,5}', E'8:30. Slot 5: 100 g FruBon paneer with salt, pepper and salad, 3 boiled eggs.'),
-  ('shutdown-chana', '22:30', '{0,1,4}', E'10:30. Shut down, screens off.\nSlot 6: 30 g roasted chana, and tea.\nThen the walk and family time till 11:00.'),
-  ('shutdown-makhana', '22:30', '{2,5}', E'10:30. Shut down, screens off.\nSlot 6: 30 g roasted makhana, and tea.\nThen the walk and family time till 11:00.'),
-  ('shutdown-walnuts', '22:30', '{3,6}', E'10:30. Shut down, screens off.\nSlot 6: 20 g walnuts, 5 halves, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-chana', '22:30', '{1,6}', E'10:30. Shut down, screens off.\nSlot 6: 30 g roasted chana, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-makhana', '22:30', '{2,0}', E'10:30. Shut down, screens off.\nSlot 6: 30 g roasted makhana, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-pista', '22:30', '{4}', E'10:30. Shut down, screens off.\nSlot 6: 20 g pistachios, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-pumpkin', '22:30', '{5}', E'10:30. Shut down, screens off.\nSlot 6: 20 g pumpkin seeds, and tea.\nThen the walk and family time till 11:00.'),
+  ('shutdown-walnuts', '22:30', '{3}', E'10:30. Shut down, screens off.\nSlot 6: 20 g walnuts, 5 halves, and tea.\nThen the walk and family time till 11:00.'),
   ('lights-out', '23:00', '{0,1,2,3,4,5,6}', E'11:00. Lights out.');
 
 select cron.unschedule('bot-tick') where exists (select 1 from cron.job where jobname = 'bot-tick');
