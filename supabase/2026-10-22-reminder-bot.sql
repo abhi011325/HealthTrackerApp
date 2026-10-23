@@ -90,7 +90,7 @@ insert into public.bot_reminders (label, time_ist, days, message) values
   ('kuhu-am', '06:30', '{0,1,2,3,4,5,6}', E'6:30 to 7:00. Kuhu: her breakfast, then walk and talk till she leaves. Black coffee or americano if you want it.'),
   ('workout', '07:00', '{0,1,2,3,4,5,6}', E'7:00 to 8:00. Workout, fasted.'),
   ('get-ready', '08:00', '{0,1,2,3,4,5,6}', E'8:00 to 8:30. Shower, get ready. Make the omelette.'),
-  ('job-flex', '08:30', '{0,1,2,3,4,5,6}', E'8:30 to 12:30. Job, flexible 4 hours.\nSlot 1 now: 1 scoop (30 g) whey in water, 2-egg omelette with 5 g butter.'),
+  ('job-flex', '08:30', '{0,1,2,3,4,5,6}', E'8:30 to 12:30. Job, flexible 4 hours.\nSlot 1 now: 1 scoop (30 g) whey in water, 2-egg omelette with 5 g butter, 1 Centrum Men tablet.'),
   ('slot2', '11:30', '{0,1,2,3,4,5,6}', E'11:30. Slot 2: 200 g Amul dahi with 50 g frozen berries.'),
   ('projects-1', '12:30', '{0,1,2,3,4,5,6}', E'12:30 to 3:00. Personal projects. First 15 minutes: today''s journey clip or photo.'),
   ('slot3-eggs', '15:00', '{0,1,3,5}', E'3:00 to 3:30. Slot 3, lunch with Kuhu: salad and 2 boiled eggs first, then 1 roti, 1 cup dal, 1 katori sabzi.'),
