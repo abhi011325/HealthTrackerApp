@@ -76,27 +76,23 @@ revoke all on function public.bot_send(text) from public, anon, authenticated;
 revoke all on function public.bot_tick() from public, anon, authenticated;
 grant execute on function public.bot_send(text) to service_role;   -- scripts/reminders.sh test
 
--- The schedule: summer times, one message at every block boundary, every day incl. Sunday. The 6:00 message carries that day's grocery list; food slots carry the weekly rotation from PLAN.md section 5.
+-- The schedule: summer times, one message at every block boundary, every day incl. Sunday. The 6:00 message lists that day's Blinkit items (eggs, dahi, FruBon, berries Tue/Fri, snack); food slots carry the weekly rotation from PLAN.md section 5. No fruit except the Tue/Fri berries (his call 2026-10-24).
 delete from public.bot_sent; delete from public.bot_reminders;
 insert into public.bot_reminders (label, time_ist, days, message) values
-  ('wake-fri', '06:00', '{5}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday''s food, check the fridge:\n7 eggs\n200 g Amul dahi + 50 g frozen blueberries\n100 g FruBon paneer\nsalad veg\n20 g sunflower seeds\n+ roti, dal, sabzi at lunch'),
-  ('wake-mon', '06:00', '{1}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday''s food, check the fridge:\n7 eggs\n200 g Amul dahi + 1 small banana\n100 g FruBon paneer\nsalad veg\n30 g roasted chana\n+ roti, dal, sabzi at lunch'),
-  ('wake-sat', '06:00', '{6}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday''s food, check the fridge:\n4 eggs\n200 g Amul dahi + 1 guava\n200 g FruBon paneer (lunch + dinner)\nsalad veg\n20 g roasted pistachios\n+ roti, dal, sabzi at lunch'),
-  ('wake-sun', '06:00', '{0}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday''s food, check the fridge:\n7 eggs\n200 g Amul dahi + 100 g pomegranate\n100 g FruBon paneer\nsalad veg\n30 g roasted makhana\n+ roti, dal, sabzi at lunch'),
-  ('wake-thu', '06:00', '{4}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday''s food, check the fridge:\n4 eggs\n200 g Amul dahi + 1 apple\n200 g FruBon paneer (lunch + dinner)\nsalad veg\n20 g watermelon seeds\n+ roti, dal, sabzi at lunch'),
-  ('wake-tue', '06:00', '{2}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday''s food, check the fridge:\n4 eggs\n200 g Amul dahi + 50 g frozen mixed berries\n200 g FruBon paneer (lunch + dinner)\nsalad veg\n20 g pumpkin seeds\n+ roti, dal, sabzi at lunch'),
-  ('wake-wed', '06:00', '{3}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday''s food, check the fridge:\n7 eggs\n200 g Amul dahi + 150 g papaya\n100 g FruBon paneer\nsalad veg\n20 g rock-salt peanuts\n+ roti, dal, sabzi at lunch'),
+  ('wake-fri', '06:00', '{5}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday from Blinkit:\n7 eggs\n200 g Amul dahi\n100 g FruBon paneer\n50 g frozen blueberries\n20 g sunflower seeds'),
+  ('wake-mon', '06:00', '{1}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday from Blinkit:\n7 eggs\n200 g Amul dahi\n100 g FruBon paneer\n30 g roasted chana'),
+  ('wake-sat', '06:00', '{6}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday from Blinkit:\n4 eggs\n200 g Amul dahi\n200 g FruBon paneer\n20 g roasted pistachios'),
+  ('wake-sun', '06:00', '{0}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday from Blinkit:\n7 eggs\n200 g Amul dahi\n100 g FruBon paneer\n30 g roasted makhana'),
+  ('wake-thu', '06:00', '{4}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday from Blinkit:\n4 eggs\n200 g Amul dahi\n200 g FruBon paneer\n20 g watermelon seeds'),
+  ('wake-tue', '06:00', '{2}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday from Blinkit:\n4 eggs\n200 g Amul dahi\n200 g FruBon paneer\n50 g frozen mixed berries\n20 g pumpkin seeds'),
+  ('wake-wed', '06:00', '{3}', E'6:00. Good morning. Water, toilet, brush, then weigh in. Log the weight and yesterday''s steps in the app.\n\nToday from Blinkit:\n7 eggs\n200 g Amul dahi\n100 g FruBon paneer\n20 g rock-salt peanuts'),
   ('kuhu-am', '06:30', '{0,1,2,3,4,5,6}', E'6:30 to 7:00. Kuhu: her breakfast, then walk and talk till she leaves. Black coffee or americano if you want it.'),
   ('workout', '07:00', '{0,1,2,3,4,5,6}', E'7:00 to 8:00. Workout, fasted.'),
   ('get-ready', '08:00', '{0,1,2,3,4,5,6}', E'8:00 to 8:30. Shower, get ready. Make the omelette.'),
   ('job-flex', '08:30', '{0,1,2,3,4,5,6}', E'8:30 to 12:30. Job, flexible 4 hours.\nSlot 1 now: 1 scoop whey in water, 2-egg omelette.'),
   ('slot2-fri', '11:30', '{5}', E'11:30. Slot 2: 200 g Amul dahi with 50 g frozen blueberries.'),
-  ('slot2-mon', '11:30', '{1}', E'11:30. Slot 2: 200 g Amul dahi with 1 small banana.'),
-  ('slot2-sat', '11:30', '{6}', E'11:30. Slot 2: 200 g Amul dahi with 1 guava.'),
-  ('slot2-sun', '11:30', '{0}', E'11:30. Slot 2: 200 g Amul dahi with 100 g pomegranate.'),
-  ('slot2-thu', '11:30', '{4}', E'11:30. Slot 2: 200 g Amul dahi with 1 chopped apple.'),
+  ('slot2-plain', '11:30', '{0,1,3,4,6}', E'11:30. Slot 2: 200 g Amul dahi, salt and jeera.'),
   ('slot2-tue', '11:30', '{2}', E'11:30. Slot 2: 200 g Amul dahi with 50 g frozen mixed berries.'),
-  ('slot2-wed', '11:30', '{3}', E'11:30. Slot 2: 200 g Amul dahi with 150 g papaya.'),
   ('projects-1', '12:30', '{0,1,2,3,4,5,6}', E'12:30 to 3:00. Personal projects. First 15 minutes: today''s journey clip or photo.'),
   ('slot3-eggs', '15:00', '{0,1,3,5}', E'3:00 to 3:30. Slot 3, lunch with Kuhu: salad and 2 boiled eggs first, then 1 roti, 1 cup dal, sabzi.'),
   ('slot3-paneer', '15:00', '{2,4,6}', E'3:00 to 3:30. Slot 3, lunch with Kuhu: salad and 100 g FruBon paneer cubes first, then 1 roti, 1 cup dal, sabzi.'),
